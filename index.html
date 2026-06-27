@@ -268,7 +268,7 @@
         gameActive = false;
         document.getElementById("game-over-screen").style.display = "flex";
         document.getElementById("final-score").innerText = "Score: " + score;
-        setTimeout(() => { if (window.parent) window.parent.postMessage({ 'score': score, 'action': 'endTournament' }, '*'); }, 1500);
+        setTimeout(() => { try { GameChannel.postMessage(JSON.stringify({ 'score': score, 'action': 'endTournament' })); } catch(e) { if (window.parent) window.parent.postMessage({ 'score': score, 'action': 'endTournament' }, '*'); } }, 1500);
     }
 
     animate();
