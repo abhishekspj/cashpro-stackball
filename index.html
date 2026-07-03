@@ -264,14 +264,32 @@
         renderer.render(scene, camera);
     }
 
+    // ====== MODIFIED GAMEOVER FUNCTION ======
     function gameOver() {
         gameActive = false;
         document.getElementById("game-over-screen").style.display = "flex";
         document.getElementById("final-score").innerText = "Score: " + score;
-        setTimeout(() => { try { GameChannel.postMessage(JSON.stringify({ 'score': score, 'action': 'endTournament' })); } catch(e) { if (window.parent) window.parent.postMessage({ 'score': score, 'action': 'endTournament' }, '*'); } }, 1500);
+        
+        // ====== CASHPRO INDIA SCORE BRIDGE ======
+        try {
+            if (window.flutter_inappwebview) {
+                // FlutterFlow WebView se communication
+                window.flutter_inappwebview.callHandler('onGameOver', score.toString());
+                console.log("Score sent to CashPro App: " + score);
+                
+                // UI feedback that score is submitted
+                document.querySelector('.loading-text').innerText = "Score Submitted! Returning...";
+            } else {
+                console.log("App ke bahar run ho raha hai. Score: " + score);
+                document.querySelector('.loading-text').innerText = "Test Mode: Score " + score;
+            }
+        } catch (e) {
+            console.error("Score send karne mein error: ", e);
+        }
+        // ========================================
     }
 
     animate();
 </script>
 </body>
-</html>   
+</html>
