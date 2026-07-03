@@ -61,7 +61,7 @@
 <script>
     let score = 0; let lives = 3; let gameActive = true;
     let isSmashing = false; let gameStarted = false;
-    let isInvulnerable = false; // 🛡️ NEW: Invincibility Flag
+    let isInvulnerable = false; 
 
     // --- Scene Setup ---
     const scene = new THREE.Scene();
@@ -264,29 +264,26 @@
         renderer.render(scene, camera);
     }
 
-    // ====== MODIFIED GAMEOVER FUNCTION ======
+    // ====== COMPLETELY CLEAN & DUMB GAMEOVER FUNCTION ======
     function gameOver() {
         gameActive = false;
         document.getElementById("game-over-screen").style.display = "flex";
         document.getElementById("final-score").innerText = "Score: " + score;
         
-        // ====== CASHPRO INDIA SCORE BRIDGE ======
         try {
             if (window.flutter_inappwebview) {
-                // FlutterFlow WebView se communication
+                // Sirf raw score pass kar rahe hain, baaki security FlutterFlow handle karega
                 window.flutter_inappwebview.callHandler('onGameOver', score.toString());
-                console.log("Score sent to CashPro App: " + score);
-                
-                // UI feedback that score is submitted
-                document.querySelector('.loading-text').innerText = "Score Submitted! Returning...";
-            } else {
-                console.log("App ke bahar run ho raha hai. Score: " + score);
-                document.querySelector('.loading-text').innerText = "Test Mode: Score " + score;
+                document.querySelector('.loading-text').innerText = "Processing Score...";
+            } else if (window.parent) {
+                // Fallback testing ke liye
+                window.parent.postMessage({ score: score, action: 'endTournament' }, '*');
+                console.log("Test Mode Score Sent: ", score);
+                document.querySelector('.loading-text').innerText = "Test Mode: Ready";
             }
         } catch (e) {
-            console.error("Score send karne mein error: ", e);
+            console.error("Score send error: ", e);
         }
-        // ========================================
     }
 
     animate();
