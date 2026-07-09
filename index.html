@@ -264,25 +264,61 @@
         renderer.render(scene, camera);
     }
 
-    // ====== COMPLETELY CLEAN & DUMB GAMEOVER FUNCTION ======
-    function gameOver() {
+    // ====== SECURE VERCEL API GAMEOVER FUNCTION ======
+    async function gameOver() {
         gameActive = false;
         document.getElementById("game-over-screen").style.display = "flex";
         document.getElementById("final-score").innerText = "Score: " + score;
-        
-        try {
-            if (window.flutter_inappwebview) {
-                // Sirf raw score pass kar rahe hain, baaki security FlutterFlow handle karega
-                window.flutter_inappwebview.callHandler('onGameOver', score.toString());
-                document.querySelector('.loading-text').innerText = "Processing Score...";
-            } else if (window.parent) {
-                // Fallback testing ke liye
+        document.querySelector('.loading-text').innerText = "Submitting Score to Server...";
+
+        // 1. Get IDs from the URL (Passed by FlutterFlow)
+        const urlParams = new URLSearchParams(window.location.search);
+        const userId = urlParams.get('userId');
+        const tournamentId = urlParams.get('tournamentId');
+
+        if (!userId || !tournamentId) {
+            document.querySelector('.loading-text').innerText = "Error: Missing Game IDs.";
+            console.log("Test Mode Score: ", score);
+            // Fallback for FlutterFlow Web Test Mode
+             if (window.parent) {
                 window.parent.postMessage({ score: score, action: 'endTournament' }, '*');
-                console.log("Test Mode Score Sent: ", score);
-                document.querySelector('.loading-text').innerText = "Test Mode: Ready";
             }
-        } catch (e) {
-            console.error("Score send error: ", e);
+            return;
+        }
+
+        // 2. Call Your Vercel API Directly!
+        try {
+            // Using the link you provided
+            const vercelApiUrl = "https://cash-pro-backend-85my6djv0-cashproindiaofficial-3631s-projects.vercel.app/api/submit_score"; 
+            
+            const response = await fetch(vercelApiUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    userId: userId,
+                    tournamentId: tournamentId,
+                    score: score
+                })
+            });
+
+            const data = await response.json();
+
+            if (response.ok) {
+                document.querySelector('.loading-text').innerText = "Score Saved Successfully!";
+                // Now tell FlutterFlow to close the webview and go to leaderboard
+                if (window.flutter_inappwebview) {
+                     window.flutter_inappwebview.callHandler('onGameOver', 'success');
+                } else if (window.parent) {
+                    window.parent.postMessage({ score: score, action: 'endTournament', status: 'success' }, '*');
+                }
+            } else {
+                 document.querySelector('.loading-text').innerText = "Failed to save score.";
+                 console.error("Vercel Error:", data);
+            }
+
+        } catch (error) {
+            document.querySelector('.loading-text').innerText = "Network Error.";
+            console.error("Fetch error: ", error);
         }
     }
 
